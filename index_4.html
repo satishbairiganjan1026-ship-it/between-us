@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Between Us — Daily Distance Date</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --cream: #f6f1ea;
+    --peach: #ffe9d6;
+    --mint: #eaf3ec;
+    --ink: #1f2420;
+    --charcoal: #3d4440;
+    --slate: #5c635e;
+    --line: #d8d2c6;
+    --teal: #1f6f5c;
+    --rose: #c1495a;
+    --card: #ffffff;
+    --hero: #4b524d;
+    --radius: 18px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0; padding:0;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, var(--peach) 0%, var(--cream) 45%, var(--mint) 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  .wrap{
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position: relative;
+    background: linear-gradient(120deg, #454b46 0%, #52584f 55%, #5c625a 100%);
+    border-radius: 22px;
+    padding: 48px 56px;
+    color: #f4f1ea;
+    overflow: hidden;
+    box-shadow: 0 20px 60px -20px rgba(30,35,30,0.45);
+  }
+  .hero::after{
+    content:"";
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(115deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 90px);
+    pointer-events: none;
+  }
+  .eyebrow{
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    letter-spacing: 0.16em;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #d9d4c8;
+    margin-bottom: 18px;
+  }
+  .hero h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(52px, 8vw, 92px);
+    line-height: 0.95;
+    margin: 0 0 22px;
+    letter-spacing: -0.01em;
+  }
+  .hero p{
+    font-size: 17px;
+    line-height: 1.5;
+    color: #e6e2d8;
+    max-width: 420px;
+    margin: 0;
+  }
+  .date-card{
+    position: absolute;
+    right: 56px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #f3efe6;
+    color: var(--ink);
+    border-radius: 14px;
+    padding: 22px 30px;
+    text-align: center;
+    min-width: 130px;
+    box-shadow: 0 14px 30px -12px rgba(0,0,0,0.35);
+  }
+  .date-card .dow{
+    font-size: 13px;
+    color: var(--slate);
+    margin-bottom: 4px;
+  }
+  .date-card .dom{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 28px;
+  }
+
+  @media (max-width: 720px){
+    .hero{ padding: 36px 26px 100px; }
+    .date-card{ right: 26px; left: 26px; top: auto; bottom: -34px; transform: none; }
+  }
+
+  /* ---------- TABS ---------- */
+  .tabbar{
+    display: inline-flex;
+    gap: 4px;
+    background: var(--card);
+    padding: 6px;
+    border-radius: 14px;
+    margin: 32px 0 24px;
+    box-shadow: 0 2px 10px -4px rgba(0,0,0,0.08);
+  }
+  .tab{
+    border: none;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14.5px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--slate);
+    transition: background .15s ease, color .15s ease;
+  }
+  .tab.active{
+    background: var(--ink);
+    color: #fff;
+  }
+  .tab.signout{
+    color: var(--rose);
+    margin-left: 4px;
+  }
+  .tab.signout:hover{ background: #fbeaea; }
+
+  /* ---------- TODAY GRID ---------- */
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  @media (max-width: 900px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .card{
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 2px 14px -6px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .card-head{
+    display:flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .card-head .num{
+    font-size: 12px;
+    color: var(--slate);
+    font-weight: 600;
+    display:block;
+    margin-bottom: 2px;
+  }
+  .card-head h3{
+    margin: 0;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 19px;
+  }
+  .icon-btn{
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: none;
+    display: flex; align-items:center; justify-content:center;
+    cursor: pointer;
+    font-size: 15px;
+    flex-shrink: 0;
+    transition: transform .15s ease;
+  }
+  .icon-btn:hover{ transform: rotate(20deg); }
+  .icon-btn.q{ background: #f7e6c4; color: #8a6a1c; }
+  .icon-btn.song{ background: #f7e6c4; color: #8a6a1c; }
+  .icon-btn.photo{ background: #cfe9e0; color: var(--teal); }
+
+  .question-box{
+    background: var(--mint);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 19px;
+    color: var(--teal);
+    line-height: 1.35;
+  }
+
+  label.small{
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--charcoal);
+    margin-bottom: -6px;
+  }
+
+  textarea, input[type="text"], input[type="url"]{
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #fdfcfa;
+    color: var(--ink);
+    resize: vertical;
+  }
+  textarea:focus, input:focus{
+    outline: 2px solid var(--teal);
+    outline-offset: 1px;
+  }
+  textarea.response{ min-height: 130px; }
+
+  .photo-drop{
+    flex: 1;
+    min-height: 130px;
+    border: 2px dashed #cbd6c9;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--mint), #fbf6e8);
+    display: flex; align-items:center; justify-content:center;
+    text-align:center;
+    font-weight: 700;
+    color: var(--teal);
+    font-size: 15px;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+  }
+  .photo-drop img{
+    width: 100%; height: 100%; object-fit: cover;
+    position: absolute; inset: 0;
+  }
+  .photo-drop input[type="file"]{ display: none; }
+
+  .why-box{ min-height: 90px; }
+
+  /* ---------- ACTION ROW ---------- */
+  .actions{
+    display: flex;
+    gap: 16px;
+    margin-top: 26px;
+    flex-wrap: wrap;
+  }
+  .actions .spacer{ flex: 1; }
+  .btn{
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14.5px;
+    padding: 13px 26px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: filter .15s ease, transform .1s ease;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btn.primary{ background: var(--rose); color: #fff; }
+  .btn.primary:hover{ filter: brightness(1.06); }
+  .btn.ghost{ background: #eef6f1; color: var(--teal); border: 1px solid #d3e6da; }
+  .btn.ghost:hover{ background: #e3f0e8; }
+  .btn.plain{ background: transparent; color: var(--slate); border: 1px solid var(--line); }
+  .btn.plain:hover{ background: #f2efe8; }
+
+  .toast{
+    position: fixed;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease, transform .25s ease;
+    z-index: 50;
+  }
+  .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---------- MEMORY JAR ---------- */
+  .jar-head{
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 14px -6px rgba(0,0,0,0.08);
+  }
+  .jar-head .eyebrow2{
+    font-size: 12px; letter-spacing: 0.1em; font-weight: 700;
+    color: var(--slate); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .jar-head h2{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 30px;
+    margin: 0;
+  }
+  .jar-empty{
+    margin-top: 18px;
+    border: 2px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 44px 20px;
+    text-align: center;
+    color: var(--slate);
+    font-size: 15px;
+    font-weight: 500;
+    background: rgba(255,255,255,0.5);
+  }
+
+  .jar-list{
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .jar-entry{
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 14px -6px rgba(0,0,0,0.08);
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 640px){
+    .jar-entry{ grid-template-columns: 1fr; }
+  }
+  .jar-entry .when{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .jar-entry .when .yr{
+    display:block; font-family:'Inter'; font-weight:600; font-size:12px; color: var(--slate); margin-top: 3px;
+  }
+  .jar-entry .body p{ margin: 0 0 8px; font-size: 14.5px; line-height: 1.5; }
+  .jar-entry .body strong{ color: var(--teal); }
+  .jar-entry .photo-thumb{
+    width: 100%; max-width: 220px;
+    border-radius: 10px;
+    margin-top: 6px;
+    display: block;
+  }
+  .jar-entry .row-actions{
+    margin-top: 10px;
+  }
+  .jar-entry .row-actions button{
+    background: none; border: none; color: var(--rose);
+    font-size: 13px; font-weight: 600; cursor: pointer; padding: 0;
+  }
+
+  /* ---------- SIGN IN ---------- */
+  .signin-screen{
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .signin-card{
+    background: #fff;
+    border-radius: 20px;
+    padding: 44px 40px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 30px 70px -30px rgba(20,20,20,0.35);
+    text-align: left;
+  }
+  .signin-card .eyebrow{ color: var(--slate); margin-bottom: 14px;}
+  .signin-card h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 46px;
+    line-height: 0.95;
+    margin: 0 0 20px;
+    color: var(--ink);
+  }
+  .signin-card p.sub{
+    font-size: 15px;
+    color: var(--charcoal);
+    margin: 0 0 24px;
+  }
+  .google-btn{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .google-btn:hover{ background: #f8f7f4; }
+  .google-btn svg{ width: 18px; height: 18px; }
+  .signin-note{
+    margin-top: 16px;
+    font-size: 12.5px;
+    color: var(--slate);
+    line-height: 1.5;
+  }
+  .name-field{
+    margin-top: 14px;
+    display: none;
+  }
+  .name-field.show{ display: block; }
+  .name-field input{ margin-top: 8px; }
+  .enter-btn{
+    margin-top: 12px;
+    width: 100%;
+  }
+  .gsi-mount{
+    display: flex;
+    justify-content: center;
+    margin: 4px 0 2px;
+    min-height: 44px;
+  }
+  .config-warning{
+    background: #fff4e5;
+    border: 1px solid #f0d9ad;
+    color: #7a5b12;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin-bottom: 18px;
+  }
+  .config-warning code{
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .user-chip{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    padding: 6px 12px 6px 6px;
+    background: #fff;
+    border-radius: 999px;
+    box-shadow: 0 2px 10px -4px rgba(0,0,0,0.12);
+  }
+  .user-chip img{
+    width: 26px; height: 26px; border-radius: 50%;
+  }
+  .user-chip span{
+    font-size: 13.5px; font-weight: 600; color: var(--ink);
+  }
+  .tabbar-row{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 32px 0 24px;
+    flex-wrap: wrap;
+  }
+  .tabbar-row .tabbar{ margin: 0; }
+
+  #app{ display: none; }
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<!-- SIGN IN SCREEN -->
+<div class="signin-screen" id="signinScreen">
+  <div class="signin-card">
+    <div class="eyebrow" style="color:var(--slate)">PRIVATE DAILY DATE</div>
+    <h1>Between<br>Us</h1>
+    <p class="sub">Use your Google account to open today's ritual.</p>
+
+    <div class="config-warning" id="configWarning" style="display:none;">
+      <strong>Google sign-in isn't configured yet.</strong> Open this file and replace
+      <code>YOUR_GOOGLE_CLIENT_ID</code> near the bottom of the HTML with your real OAuth
+      Client ID from Google Cloud Console, and serve this page over <code>http(s)://</code>
+      (Google Sign-In does not work on <code>file://</code>). Until then, you can still
+      continue with just your name below.
+    </div>
+
+    <!-- Google renders its real button into this div -->
+    <div class="gsi-mount" id="gsiMount"></div>
+
+    <div class="name-field" id="nameField">
+      <label class="small">Or just enter your name</label>
+      <input type="text" id="nameInput" placeholder="Your name">
+      <button class="btn primary enter-btn" id="enterBtn">Continue without Google</button>
+    </div>
+    <div class="signin-note">Real Google sign-in identifies who you are on this device. Your ritual entries are still stored locally in this browser, not on a server.</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="eyebrow">DAILY DISTANCE DATE</div>
+      <h1>Between<br>Us</h1>
+      <p>A tiny shared ritual for the question, song, and photo that keep today feeling close.</p>
+      <div class="date-card">
+        <div class="dow" id="heroDow">Thursday</div>
+        <div class="dom" id="heroDom">9 Jul</div>
+      </div>
+    </div>
+
+    <div class="tabbar-row">
+      <div class="tabbar">
+        <button class="tab active" data-tab="today">Today</button>
+        <button class="tab" data-tab="jar">Memory Jar</button>
+        <button class="tab signout" id="signOutBtn">Sign out</button>
+      </div>
+      <div class="user-chip" id="userChip" style="display:none;">
+        <img id="userAvatar" src="" alt="">
+        <span id="userName"></span>
+      </div>
+    </div>
+
+    <!-- TODAY PANEL -->
+    <div id="todayPanel">
+      <div class="grid">
+        <div class="card">
+          <div class="card-head">
+            <div><span class="num">1</span><h3>Question of the day</h3></div>
+            <button class="icon-btn q" id="shuffleQ" title="New question">&#8635;</button>
+          </div>
+          <div class="question-box" id="questionText">What do you want me to know before I fall asleep?</div>
+          <label class="small">Response</label>
+          <textarea class="response" id="responseText" placeholder="Write your answer for them..."></textarea>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><span class="num">2</span><h3>Today's song</h3></div>
+            <div class="icon-btn song">&#9835;</div>
+          </div>
+          <input type="text" id="songTitle" placeholder="Song title">
+          <input type="text" id="songArtist" placeholder="Artist or note">
+          <input type="url" id="songLink" placeholder="Link, if you want">
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><span class="num">3</span><h3>A photo for them</h3></div>
+            <div class="icon-btn photo">&#9633;</div>
+          </div>
+          <label class="photo-drop" id="photoDrop">
+            <span id="photoLabel">Choose a photo</span>
+            <input type="file" id="photoInput" accept="image/*">
+          </label>
+          <textarea class="why-box" id="photoWhy" placeholder="Why this one?"></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="saveBtn">Save Today</button>
+        <button class="btn ghost" id="copyBtn">Copy Note</button>
+        <div class="spacer"></div>
+        <button class="btn plain" id="clearBtn">Clear</button>
+      </div>
+    </div>
+
+    <!-- MEMORY JAR PANEL -->
+    <div id="jarPanel" style="display:none;">
+      <div class="jar-head">
+        <div>
+          <div class="eyebrow2">SAVED DAYS</div>
+          <h2>Memory Jar</h2>
+        </div>
+        <button class="btn ghost" id="exportBtn">Export</button>
+      </div>
+      <div id="jarEmpty" class="jar-empty">Your first saved day will appear here.</div>
+      <div id="jarList" class="jar-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const QUESTIONS = [
+    "What do you want me to know before I fall asleep?",
+    "What's a small moment from today that made you smile?",
+    "What are you looking forward to this week?",
+    "If we were together right now, what would we be doing?",
+    "What's something you're proud of yourself for today?",
+    "What made today feel long or short?",
+    "What's a memory of us you keep coming back to?",
+    "What do you need more of from me right now?",
+    "What's a sound, smell, or song that reminded you of me today?",
+    "If today had a title, what would it be?",
+    "What's something you wish you could show me in person right now?",
+    "What's one thing you're grateful for today?"
+  ];
+
+  // ======================================================================
+  // REPLACE THIS with your real OAuth Client ID from Google Cloud Console.
+  // Console > APIs & Services > Credentials > Create Credentials > OAuth client ID > Web application.
+  // Add this page's real https:// URL under "Authorized JavaScript origins" first —
+  // Google Sign-In will NOT work over file:// or on an unregistered origin.
+  // ======================================================================
+  const GOOGLE_CLIENT_ID = '1054365798120-smcuosipbi66d29jul76ri23v8akng0t.apps.googleusercontent.com';
+
+  const $ = (sel) => document.querySelector(sel);
+  const signinScreen = $('#signinScreen');
+  const app = $('#app');
+  const nameField = $('#nameField');
+  const nameInput = $('#nameInput');
+  const enterBtn = $('#enterBtn');
+  const toast = $('#toast');
+  const configWarning = $('#configWarning');
+  const gsiMount = $('#gsiMount');
+  const userChip = $('#userChip');
+  const userAvatar = $('#userAvatar');
+  const userNameEl = $('#userName');
+
+  let currentUser = null; // { id, name, email, picture }
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(()=> toast.classList.remove('show'), 2200);
+  }
+
+  // Wraps localStorage.setItem so a full/quota-exceeded storage never fails silently
+  function safeSetItem(key, value){
+    try{
+      localStorage.setItem(key, value);
+      return true;
+    } catch(err){
+      console.error('Storage write failed', err);
+      showToast('Could not save — your saved photos may be taking up too much space. Try removing an old entry from the Memory Jar.');
+      return false;
+    }
+  }
+
+  // ---------- Decode Google's JWT credential (client-side only) ----------
+  // Note: this reads the token but does not cryptographically verify it.
+  // That's fine for personalizing a local, single-user browser app like this one.
+  // A real backend should verify the token server-side before trusting identity
+  // for anything sensitive.
+  function decodeJwt(token){
+    try{
+      const payload = token.split('.')[1];
+      const json = decodeURIComponent(atob(payload.replace(/-/g,'+').replace(/_/g,'/'))
+        .split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      return JSON.parse(json);
+    } catch(e){
+      console.error('Could not decode credential', e);
+      return null;
+    }
+  }
+
+  function handleGoogleCredential(response){
+    const data = decodeJwt(response.credential);
+    if(!data) return;
+    currentUser = {
+      id: data.sub,
+      name: data.name || data.email || 'you',
+      email: data.email || '',
+      picture: data.picture || ''
+    };
+    localStorage.setItem('betweenus_current_user', JSON.stringify(currentUser));
+    enterApp();
+  }
+  window.handleGoogleCredential = handleGoogleCredential;
+
+  function initGoogleSignIn(){
+    const configured = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.startsWith('YOUR_');
+    if(!configured){
+      configWarning.style.display = 'block';
+      nameField.classList.add('show');
+      return;
+    }
+    if(location.protocol === 'file:'){
+      configWarning.style.display = 'block';
+      configWarning.innerHTML = '<strong>Google sign-in needs real hosting.</strong> ' +
+        'This page is open via <code>file://</code>, which Google does not allow as a sign-in origin. ' +
+        'Serve this file over http(s) (e.g. GitHub Pages, Netlify, Vercel, or <code>python -m http.server</code>) ' +
+        'and add that exact URL to your OAuth client\'s Authorized JavaScript origins. ' +
+        'Until then, continue with just your name below.';
+      nameField.classList.add('show');
+      return;
+    }
+    if(typeof google === 'undefined' || !google.accounts || !google.accounts.id){
+      // library not loaded yet — retry shortly
+      setTimeout(initGoogleSignIn, 300);
+      return;
+    }
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential,
+      auto_select: true
+    });
+    google.accounts.id.renderButton(gsiMount, {
+      theme: 'outline',
+      size: 'large',
+      shape: 'pill',
+      text: 'signup_with',
+      width: 320
+    });
+    // Also offer One Tap for returning users
+    google.accounts.id.prompt();
+  }
+  initGoogleSignIn();
+
+  // ---------- Fallback: continue with just a name (no Google) ----------
+  enterBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    if(!name){ nameInput.focus(); return; }
+    currentUser = { id: 'local:' + name.toLowerCase(), name, email: '', picture: '' };
+    localStorage.setItem('betweenus_current_user', JSON.stringify(currentUser));
+    enterApp();
+  });
+  nameInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') enterBtn.click(); });
+
+  function enterApp(){
+    signinScreen.style.display = 'none';
+    app.style.display = 'block';
+    if(currentUser){
+      userChip.style.display = currentUser.name ? 'flex' : 'none';
+      userNameEl.textContent = currentUser.name;
+      if(currentUser.picture){
+        userAvatar.style.display = 'block';
+        userAvatar.src = currentUser.picture;
+      } else {
+        userAvatar.style.display = 'none';
+      }
+    }
+    initToday();
+    renderJar();
+  }
+
+  $('#signOutBtn').addEventListener('click', () => {
+    if(typeof google !== 'undefined' && google.accounts && google.accounts.id){
+      google.accounts.id.disableAutoSelect();
+    }
+    localStorage.removeItem('betweenus_current_user');
+    currentUser = null;
+    app.style.display = 'none';
+    signinScreen.style.display = 'flex';
+    nameField.classList.remove('show');
+    nameInput.value = '';
+    initGoogleSignIn();
+  });
+
+  // auto-resume if already signed in
+  const savedUser = JSON.parse(localStorage.getItem('betweenus_current_user') || 'null');
+  if(savedUser){
+    currentUser = savedUser;
+    enterApp();
+  }
+
+  // ---------- Per-user storage helper ----------
+  // Keeps each signed-in person's drafts and jar separate on a shared device.
+  function userKey(base){
+    const uid = currentUser ? currentUser.id : 'guest';
+    return base + '_' + uid;
+  }
+
+  // ---------- Date header ----------
+  const today = new Date();
+  $('#heroDow').textContent = today.toLocaleDateString(undefined, { weekday: 'long' });
+  $('#heroDom').textContent = today.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab[data-tab]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const which = tab.dataset.tab;
+      $('#todayPanel').style.display = which === 'today' ? 'block' : 'none';
+      $('#jarPanel').style.display = which === 'jar' ? 'block' : 'none';
+      if(which === 'jar') renderJar();
+    });
+  });
+
+  // ---------- Today state ----------
+  const dateKey = today.toISOString().slice(0,10);
+  const questionText = $('#questionText');
+  const responseText = $('#responseText');
+  const songTitle = $('#songTitle');
+  const songArtist = $('#songArtist');
+  const songLink = $('#songLink');
+  const photoDrop = $('#photoDrop');
+  const photoInput = $('#photoInput');
+  const photoLabel = $('#photoLabel');
+  const photoWhy = $('#photoWhy');
+  let currentPhotoData = null;
+
+  function pickQuestion(){
+    return QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+  }
+
+  function initToday(){
+    // Always start Today fresh on login — do not restore a previous draft,
+    // even if one exists in storage for today's date.
+    questionText.textContent = pickQuestion();
+    responseText.value = '';
+    songTitle.value = '';
+    songArtist.value = '';
+    songLink.value = '';
+    photoWhy.value = '';
+    currentPhotoData = null;
+    photoDrop.innerHTML = '<span id="photoLabel">Choose a photo</span><input type="file" id="photoInput" accept="image/*">';
+    document.getElementById('photoInput').addEventListener('change', handlePhotoChange);
+  }
+
+  function setPhotoPreview(dataUrl){
+    currentPhotoData = dataUrl;
+    photoDrop.innerHTML = '<img src="' + dataUrl + '" alt="Chosen photo">' +
+      '<input type="file" id="photoInput" accept="image/*">';
+    // rebind since we replaced innerHTML
+    document.getElementById('photoInput').addEventListener('change', handlePhotoChange);
+  }
+
+  // Resize + compress the photo client-side before it ever touches storage.
+  // Raw phone photos can be several MB; localStorage caps out around 5-10MB
+  // total per site, so an uncompressed photo can silently blow that budget.
+  function compressImage(file, maxDimension, quality){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (ev) => { img.src = ev.target.result; };
+      reader.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > height && width > maxDimension){
+          height = Math.round(height * (maxDimension / width));
+          width = maxDimension;
+        } else if(height > maxDimension){
+          width = Math.round(width * (maxDimension / height));
+          height = maxDimension;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handlePhotoChange(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    compressImage(file, 900, 0.72)
+      .then(setPhotoPreview)
+      .catch(() => showToast('Could not read that photo — try a different one'));
+  }
+  photoInput.addEventListener('change', handlePhotoChange);
+
+  $('#shuffleQ').addEventListener('click', () => {
+    let q;
+    do { q = pickQuestion(); } while (q === questionText.textContent && QUESTIONS.length > 1);
+    questionText.textContent = q;
+  });
+
+  function saveDraft(){
+    return safeSetItem(userKey('betweenus_draft_' + dateKey), JSON.stringify({
+      question: questionText.textContent,
+      response: responseText.value,
+      songTitle: songTitle.value,
+      songArtist: songArtist.value,
+      songLink: songLink.value,
+      photoWhy: photoWhy.value,
+      photoData: currentPhotoData
+    }));
+  }
+  [responseText, songTitle, songArtist, songLink, photoWhy].forEach(el => {
+    el.addEventListener('input', saveDraft);
+  });
+
+  // ---------- Save Today / Copy / Clear ----------
+  $('#saveBtn').addEventListener('click', () => {
+    saveDraft();
+    const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
+    const entryIndex = jar.findIndex(e => e.dateKey === dateKey);
+    const entry = {
+      dateKey,
+      dateLabel: today.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }),
+      year: today.getFullYear(),
+      question: questionText.textContent,
+      response: responseText.value,
+      songTitle: songTitle.value,
+      songArtist: songArtist.value,
+      songLink: songLink.value,
+      photoWhy: photoWhy.value,
+      photoData: currentPhotoData
+    };
+    if(entryIndex >= 0){ jar[entryIndex] = entry; } else { jar.unshift(entry); }
+    const ok = safeSetItem(userKey('betweenus_jar'), JSON.stringify(jar));
+    if(ok){
+      showToast('Saved today to the Memory Jar');
+      renderJar();
+    }
+  });
+
+  $('#copyBtn').addEventListener('click', () => {
+    let note = "Between Us — " + today.toLocaleDateString(undefined, { weekday:'long', day:'numeric', month:'long' }) + "\n\n";
+    note += "Q: " + questionText.textContent + "\n";
+    note += "A: " + (responseText.value || '—') + "\n\n";
+    if(songTitle.value || songArtist.value){
+      note += "Song: " + [songTitle.value, songArtist.value].filter(Boolean).join(' — ') + "\n";
+      if(songLink.value) note += "Link: " + songLink.value + "\n";
+      note += "\n";
+    }
+    if(photoWhy.value){
+      note += "Photo note: " + photoWhy.value + "\n";
+    }
+    navigator.clipboard.writeText(note).then(() => {
+      showToast('Note copied to clipboard');
+    }).catch(() => {
+      showToast('Could not copy — try selecting manually');
+    });
+  });
+
+  $('#clearBtn').addEventListener('click', () => {
+    if(!confirm('Clear today\'s entry? This does not remove anything already saved to the Memory Jar.')) return;
+    responseText.value = '';
+    songTitle.value = '';
+    songArtist.value = '';
+    songLink.value = '';
+    photoWhy.value = '';
+    currentPhotoData = null;
+    photoDrop.innerHTML = '<span id="photoLabel">Choose a photo</span><input type="file" id="photoInput" accept="image/*">';
+    document.getElementById('photoInput').addEventListener('change', handlePhotoChange);
+    questionText.textContent = pickQuestion();
+    localStorage.removeItem(userKey('betweenus_draft_' + dateKey));
+    showToast('Cleared');
+  });
+
+  // ---------- Memory Jar ----------
+  function renderJar(){
+    const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
+    const jarEmpty = $('#jarEmpty');
+    const jarList = $('#jarList');
+    if(jar.length === 0){
+      jarEmpty.style.display = 'block';
+      jarList.innerHTML = '';
+      return;
+    }
+    jarEmpty.style.display = 'none';
+    jarList.innerHTML = jar.map((e, i) => {
+      const parts = [];
+      parts.push('<p><strong>Q:</strong> ' + escapeHtml(e.question) + '</p>');
+      if(e.response) parts.push('<p>' + escapeHtml(e.response) + '</p>');
+      if(e.songTitle || e.songArtist){
+        parts.push('<p><strong>Song:</strong> ' + escapeHtml([e.songTitle, e.songArtist].filter(Boolean).join(' — ')) + '</p>');
+      }
+      if(e.photoWhy) parts.push('<p><strong>Photo:</strong> ' + escapeHtml(e.photoWhy) + '</p>');
+      if(e.photoData) parts.push('<img class="photo-thumb" src="' + e.photoData + '" alt="saved photo">');
+      parts.push('<div class="row-actions"><button data-i="'+i+'" class="deleteEntry">Remove</button></div>');
+      return '<div class="jar-entry"><div class="when">' + e.dateLabel + '<span class="yr">' + e.year + '</span></div><div class="body">' + parts.join('') + '</div></div>';
+    }).join('');
+
+    document.querySelectorAll('.deleteEntry').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.i, 10);
+        const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
+        jar.splice(idx, 1);
+        localStorage.setItem(userKey('betweenus_jar'), JSON.stringify(jar));
+        renderJar();
+      });
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m]));
+  }
+
+  $('#exportBtn').addEventListener('click', () => {
+    const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
+    if(jar.length === 0){ showToast('Nothing to export yet'); return; }
+    const blob = new Blob([JSON.stringify(jar, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'between-us-memory-jar.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Exported Memory Jar');
+  });
+
+})();
+</script>
+
+</body>
+</html>
