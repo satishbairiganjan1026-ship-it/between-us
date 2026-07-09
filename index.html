@@ -650,6 +650,18 @@
     setTimeout(()=> toast.classList.remove('show'), 2200);
   }
 
+  // Wraps localStorage.setItem so a full/quota-exceeded storage never fails silently
+  function safeSetItem(key, value){
+    try{
+      localStorage.setItem(key, value);
+      return true;
+    } catch(err){
+      console.error('Storage write failed', err);
+      showToast('Could not save — your saved photos may be taking up too much space. Try removing an old entry from the Memory Jar.');
+      return false;
+    }
+  }
+
   // ---------- Decode Google's JWT credential (client-side only) ----------
   // Note: this reads the token but does not cryptographically verify it.
   // That's fine for personalizing a local, single-user browser app like this one.
@@ -833,12 +845,41 @@
     document.getElementById('photoInput').addEventListener('change', handlePhotoChange);
   }
 
+  // Resize + compress the photo client-side before it ever touches storage.
+  // Raw phone photos can be several MB; localStorage caps out around 5-10MB
+  // total per site, so an uncompressed photo can silently blow that budget.
+  function compressImage(file, maxDimension, quality){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (ev) => { img.src = ev.target.result; };
+      reader.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > height && width > maxDimension){
+          height = Math.round(height * (maxDimension / width));
+          width = maxDimension;
+        } else if(height > maxDimension){
+          width = Math.round(width * (maxDimension / height));
+          height = maxDimension;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   function handlePhotoChange(e){
     const file = e.target.files[0];
     if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setPhotoPreview(ev.target.result);
-    reader.readAsDataURL(file);
+    compressImage(file, 900, 0.72)
+      .then(setPhotoPreview)
+      .catch(() => showToast('Could not read that photo — try a different one'));
   }
   photoInput.addEventListener('change', handlePhotoChange);
 
@@ -849,7 +890,7 @@
   });
 
   function saveDraft(){
-    localStorage.setItem(userKey('betweenus_draft_' + dateKey), JSON.stringify({
+    return safeSetItem(userKey('betweenus_draft_' + dateKey), JSON.stringify({
       question: questionText.textContent,
       response: responseText.value,
       songTitle: songTitle.value,
@@ -881,9 +922,11 @@
       photoData: currentPhotoData
     };
     if(entryIndex >= 0){ jar[entryIndex] = entry; } else { jar.unshift(entry); }
-    localStorage.setItem(userKey('betweenus_jar'), JSON.stringify(jar));
-    showToast('Saved today to the Memory Jar');
-    renderJar();
+    const ok = safeSetItem(userKey('betweenus_jar'), JSON.stringify(jar));
+    if(ok){
+      showToast('Saved today to the Memory Jar');
+      renderJar();
+    }
   });
 
   $('#copyBtn').addEventListener('click', () => {
@@ -980,5 +1023,4 @@
 </script>
 
 </body>
-  
 </html>
