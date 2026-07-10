@@ -373,6 +373,41 @@
     font-size: 13px; font-weight: 600; cursor: pointer; padding: 0;
   }
 
+  /* ---------- TODAY LOCKED ---------- */
+  .today-locked{
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    box-shadow: 0 2px 14px -6px rgba(0,0,0,0.08);
+  }
+  .today-locked-head{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .today-locked-head h2{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 26px;
+    margin: 4px 0 0;
+  }
+  .today-locked-note{
+    margin: 4px 0 0;
+    font-size: 12.5px;
+    color: var(--slate);
+  }
+  .today-locked-body{ margin-top: 18px; }
+  .today-locked-body p{ margin: 0 0 10px; font-size: 14.5px; line-height: 1.5; }
+  .today-locked-body strong{ color: var(--teal); }
+  .today-locked-body .photo-thumb{
+    width: 100%; max-width: 260px;
+    border-radius: 12px;
+    margin-top: 6px;
+    display: block;
+  }
+
   /* ---------- SIGN IN ---------- */
   .signin-screen{
     min-height: 100vh;
@@ -486,6 +521,10 @@
   #app{ display: none; }
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Firebase (shared Memory Jar storage) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -504,6 +543,13 @@
       continue with just your name below.
     </div>
 
+    <div class="config-warning" id="firebaseWarning" style="display:none;">
+      <strong>Shared Memory Jar isn't configured yet.</strong> Replace the
+      <code>FIREBASE_CONFIG</code> placeholder near the bottom of the HTML with your real
+      Firebase project config. Sign-in will still work, but saved days won't sync between
+      you and your partner until this is set.
+    </div>
+
     <!-- Google renders its real button into this div -->
     <div class="gsi-mount" id="gsiMount"></div>
 
@@ -512,7 +558,7 @@
       <input type="text" id="nameInput" placeholder="Your name">
       <button class="btn primary enter-btn" id="enterBtn">Continue without Google</button>
     </div>
-    <div class="signin-note">Real Google sign-in identifies who you are on this device. Your ritual entries are still stored locally in this browser, not on a server.</div>
+    <div class="signin-note">Signing in with Google syncs your saved days with your partner through a shared, private Firebase database. Continuing with just a name keeps entries local to this device only.</div>
   </div>
 </div>
 
@@ -544,45 +590,61 @@
 
     <!-- TODAY PANEL -->
     <div id="todayPanel">
-      <div class="grid">
-        <div class="card">
-          <div class="card-head">
-            <div><span class="num">1</span><h3>Question of the day</h3></div>
-            <button class="icon-btn q" id="shuffleQ" title="New question">&#8635;</button>
-          </div>
-          <div class="question-box" id="questionText">What do you want me to know before I fall asleep?</div>
-          <label class="small">Response</label>
-          <textarea class="response" id="responseText" placeholder="Write your answer for them..."></textarea>
-        </div>
 
-        <div class="card">
-          <div class="card-head">
-            <div><span class="num">2</span><h3>Today's song</h3></div>
-            <div class="icon-btn song">&#9835;</div>
+      <!-- Shown once today's entry has been saved: read-only until Edit is pressed -->
+      <div id="todayLocked" class="today-locked" style="display:none;">
+        <div class="today-locked-head">
+          <div>
+            <div class="eyebrow2">TODAY · SAVED</div>
+            <h2>Your entry for today</h2>
+            <p class="today-locked-note">One entry per day — press Edit to make changes.</p>
           </div>
-          <input type="text" id="songTitle" placeholder="Song title">
-          <input type="text" id="songArtist" placeholder="Artist or note">
-          <input type="url" id="songLink" placeholder="Link, if you want">
+          <button class="btn ghost" id="editTodayBtn">Edit</button>
         </div>
-
-        <div class="card">
-          <div class="card-head">
-            <div><span class="num">3</span><h3>A photo for them</h3></div>
-            <div class="icon-btn photo">&#9633;</div>
-          </div>
-          <label class="photo-drop" id="photoDrop">
-            <span id="photoLabel">Choose a photo</span>
-            <input type="file" id="photoInput" accept="image/*">
-          </label>
-          <textarea class="why-box" id="photoWhy" placeholder="Why this one?"></textarea>
-        </div>
+        <div id="todayLockedBody" class="today-locked-body"></div>
       </div>
 
-      <div class="actions">
-        <button class="btn primary" id="saveBtn">Save Today</button>
-        <button class="btn ghost" id="copyBtn">Copy Note</button>
-        <div class="spacer"></div>
-        <button class="btn plain" id="clearBtn">Clear</button>
+      <div id="todayForm">
+        <div class="grid">
+          <div class="card">
+            <div class="card-head">
+              <div><span class="num">1</span><h3>Question of the day</h3></div>
+              <button class="icon-btn q" id="shuffleQ" title="New question">&#8635;</button>
+            </div>
+            <div class="question-box" id="questionText">What do you want me to know before I fall asleep?</div>
+            <label class="small">Response</label>
+            <textarea class="response" id="responseText" placeholder="Write your answer for them..."></textarea>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div><span class="num">2</span><h3>Today's song</h3></div>
+              <div class="icon-btn song">&#9835;</div>
+            </div>
+            <input type="text" id="songTitle" placeholder="Song title">
+            <input type="text" id="songArtist" placeholder="Artist or note">
+            <input type="url" id="songLink" placeholder="Link, if you want">
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div><span class="num">3</span><h3>A photo for them</h3></div>
+              <div class="icon-btn photo">&#9633;</div>
+            </div>
+            <label class="photo-drop" id="photoDrop">
+              <span id="photoLabel">Choose a photo</span>
+              <input type="file" id="photoInput" accept="image/*">
+            </label>
+            <textarea class="why-box" id="photoWhy" placeholder="Why this one?"></textarea>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="saveBtn">Save Today</button>
+          <button class="btn ghost" id="copyBtn">Copy Note</button>
+          <div class="spacer"></div>
+          <button class="btn plain" id="clearBtn">Clear</button>
+        </div>
       </div>
     </div>
 
@@ -590,7 +652,7 @@
     <div id="jarPanel" style="display:none;">
       <div class="jar-head">
         <div>
-          <div class="eyebrow2">SAVED DAYS</div>
+          <div class="eyebrow2" id="jarEyebrow">SAVED DAYS</div>
           <h2>Memory Jar</h2>
         </div>
         <button class="btn ghost" id="exportBtn">Export</button>
@@ -629,6 +691,45 @@
   // ======================================================================
   const GOOGLE_CLIENT_ID = '1054365798120-smcuosipbi66d29jul76ri23v8akng0t.apps.googleusercontent.com';
 
+  // ======================================================================
+  // REPLACE THIS with your real Firebase project config.
+  // Firebase Console (console.firebase.google.com) > Project settings >
+  // General > Your apps > Web app > SDK setup and configuration > Config.
+  // You can create the Firebase project on top of the SAME Google Cloud
+  // project you used for GOOGLE_CLIENT_ID above, or a new one — either works.
+  // Also: in Firebase Console > Build > Firestore Database, create a database,
+  // and under Rules, use something like:
+  //   allow read, write: if request.auth != null;
+  // (or restrict to your two email addresses for real privacy — see chat).
+  // ======================================================================
+  const FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyD9POepl8648xjJAjKuvfOr9GS4O_SBhWU',
+    authDomain: 'between-us-501900.firebaseapp.com',
+    projectId: 'between-us-501900',
+    storageBucket: 'between-us-501900.firebasestorage.app',
+    messagingSenderId: '1054365798120',
+    appId: '1:1054365798120:web:708de6a74afc756928035d'
+  };
+  let FIREBASE_CONFIGURED = FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith('YOUR_');
+
+  let db = null;
+  let fbAuth = null;
+  if(FIREBASE_CONFIGURED){
+    try{
+      if(typeof firebase === 'undefined'){
+        throw new Error('Firebase SDK did not load (check network/ad-blocker/script tags)');
+      }
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+      fbAuth = firebase.auth();
+    } catch(err){
+      console.error('Firebase failed to initialize — falling back to local-only storage.', err);
+      FIREBASE_CONFIGURED = false;
+      db = null;
+      fbAuth = null;
+    }
+  }
+
   const $ = (sel) => document.querySelector(sel);
   const signinScreen = $('#signinScreen');
   const app = $('#app');
@@ -637,12 +738,16 @@
   const enterBtn = $('#enterBtn');
   const toast = $('#toast');
   const configWarning = $('#configWarning');
+  const firebaseWarning = $('#firebaseWarning');
   const gsiMount = $('#gsiMount');
   const userChip = $('#userChip');
   const userAvatar = $('#userAvatar');
   const userNameEl = $('#userName');
+  const jarEyebrow = $('#jarEyebrow');
 
   let currentUser = null; // { id, name, email, picture }
+  let jarUnsubscribe = null; // Firestore realtime listener unsubscribe fn
+  let latestJarEntries = []; // cache for Export button
 
   function showToast(msg){
     toast.textContent = msg;
@@ -682,14 +787,38 @@
   function handleGoogleCredential(response){
     const data = decodeJwt(response.credential);
     if(!data) return;
-    currentUser = {
-      id: data.sub,
+    const googleProfile = {
       name: data.name || data.email || 'you',
       email: data.email || '',
       picture: data.picture || ''
     };
-    localStorage.setItem('betweenus_current_user', JSON.stringify(currentUser));
-    enterApp();
+
+    if(FIREBASE_CONFIGURED && fbAuth){
+      const credential = firebase.auth.GoogleAuthProvider.credential(response.credential);
+      fbAuth.signInWithCredential(credential)
+        .then((result) => {
+          currentUser = {
+            id: result.user.uid, // Firebase's own uid — matches request.auth.uid in Firestore rules
+            name: googleProfile.name,
+            email: googleProfile.email,
+            picture: googleProfile.picture,
+            synced: true
+          };
+          localStorage.setItem('betweenus_current_user', JSON.stringify(currentUser));
+          enterApp();
+        })
+        .catch((err) => {
+          console.error('Firebase sign-in failed', err);
+          showToast('Signed in, but syncing failed to start — check your Firebase config');
+          currentUser = { id: 'local:' + data.sub, ...googleProfile, synced: false };
+          localStorage.setItem('betweenus_current_user', JSON.stringify(currentUser));
+          enterApp();
+        });
+    } else {
+      currentUser = { id: 'local:' + data.sub, ...googleProfile, synced: false };
+      localStorage.setItem('betweenus_current_user', JSON.stringify(currentUser));
+      enterApp();
+    }
   }
   window.handleGoogleCredential = handleGoogleCredential;
 
@@ -729,6 +858,10 @@
     });
     // Also offer One Tap for returning users
     google.accounts.id.prompt();
+
+    if(!FIREBASE_CONFIGURED){
+      firebaseWarning.style.display = 'block';
+    }
   }
   initGoogleSignIn();
 
@@ -755,13 +888,17 @@
         userAvatar.style.display = 'none';
       }
     }
-    initToday();
-    renderJar();
+    checkTodayEntry();
+    subscribeJar();
   }
 
   $('#signOutBtn').addEventListener('click', () => {
     if(typeof google !== 'undefined' && google.accounts && google.accounts.id){
       google.accounts.id.disableAutoSelect();
+    }
+    if(jarUnsubscribe){ jarUnsubscribe(); jarUnsubscribe = null; }
+    if(FIREBASE_CONFIGURED && fbAuth && fbAuth.currentUser){
+      fbAuth.signOut().catch((err) => console.error('Firebase sign-out failed', err));
     }
     localStorage.removeItem('betweenus_current_user');
     currentUser = null;
@@ -772,12 +909,7 @@
     initGoogleSignIn();
   });
 
-  // auto-resume if already signed in
-  const savedUser = JSON.parse(localStorage.getItem('betweenus_current_user') || 'null');
-  if(savedUser){
-    currentUser = savedUser;
-    enterApp();
-  }
+  // (auto-resume moved to the end of the script, after all fields/functions are ready)
 
   // ---------- Per-user storage helper ----------
   // Keeps each signed-in person's drafts and jar separate on a shared device.
@@ -799,7 +931,7 @@
       const which = tab.dataset.tab;
       $('#todayPanel').style.display = which === 'today' ? 'block' : 'none';
       $('#jarPanel').style.display = which === 'jar' ? 'block' : 'none';
-      if(which === 'jar') renderJar();
+      if(which === 'jar') subscribeJar();
     });
   });
 
@@ -815,25 +947,99 @@
   const photoLabel = $('#photoLabel');
   const photoWhy = $('#photoWhy');
   let currentPhotoData = null;
+  let todaySavedEntry = null; // the entry already saved for today by this user, if any
 
   function pickQuestion(){
     return QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
   }
 
-  function initToday(){
-    const draft = JSON.parse(localStorage.getItem(userKey('betweenus_draft_' + dateKey)) || 'null');
-    if(draft){
-      questionText.textContent = draft.question || pickQuestion();
-      responseText.value = draft.response || '';
-      songTitle.value = draft.songTitle || '';
-      songArtist.value = draft.songArtist || '';
-      songLink.value = draft.songLink || '';
-      photoWhy.value = draft.photoWhy || '';
-      if(draft.photoData){
-        setPhotoPreview(draft.photoData);
-      }
+  // Blank slate for a brand-new, not-yet-saved entry.
+  function resetTodayFields(){
+    questionText.textContent = pickQuestion();
+    responseText.value = '';
+    songTitle.value = '';
+    songArtist.value = '';
+    songLink.value = '';
+    photoWhy.value = '';
+    currentPhotoData = null;
+    photoDrop.innerHTML = '<span id="photoLabel">Choose a photo</span><input type="file" id="photoInput" accept="image/*">';
+    document.getElementById('photoInput').addEventListener('change', handlePhotoChange);
+  }
+
+  // Populate the editable form from an already-saved entry (used by Edit).
+  function fillTodayFields(entry){
+    questionText.textContent = entry.question || pickQuestion();
+    responseText.value = entry.response || '';
+    songTitle.value = entry.songTitle || '';
+    songArtist.value = entry.songArtist || '';
+    songLink.value = entry.songLink || '';
+    photoWhy.value = entry.photoWhy || '';
+    if(entry.photoData){
+      setPhotoPreview(entry.photoData);
     } else {
-      questionText.textContent = pickQuestion();
+      currentPhotoData = null;
+      photoDrop.innerHTML = '<span id="photoLabel">Choose a photo</span><input type="file" id="photoInput" accept="image/*">';
+      document.getElementById('photoInput').addEventListener('change', handlePhotoChange);
+    }
+  }
+
+  function showTodayForm(){
+    $('#todayForm').style.display = 'block';
+    $('#todayLocked').style.display = 'none';
+  }
+
+  function renderTodayLocked(entry){
+    const parts = [];
+    parts.push('<p><strong>Q:</strong> ' + escapeHtml(entry.question || '') + '</p>');
+    if(entry.response) parts.push('<p>' + escapeHtml(entry.response) + '</p>');
+    if(entry.songTitle || entry.songArtist){
+      parts.push('<p><strong>Song:</strong> ' + escapeHtml([entry.songTitle, entry.songArtist].filter(Boolean).join(' — ')) + '</p>');
+    }
+    if(entry.songLink) parts.push('<p><a href="' + escapeHtml(entry.songLink) + '" target="_blank" rel="noopener">Listen</a></p>');
+    if(entry.photoWhy) parts.push('<p><strong>Photo:</strong> ' + escapeHtml(entry.photoWhy) + '</p>');
+    if(entry.photoData) parts.push('<img class="photo-thumb" src="' + entry.photoData + '" alt="saved photo">');
+    $('#todayLockedBody').innerHTML = parts.join('');
+  }
+
+  function showTodayLocked(entry){
+    renderTodayLocked(entry);
+    $('#todayForm').style.display = 'none';
+    $('#todayLocked').style.display = 'block';
+  }
+
+  // Enforces one saved entry per user per day: looks up whether this user
+  // already has an entry for today (in Firestore if synced, else the local
+  // jar) and shows either the locked summary or the blank editable form.
+  function checkTodayEntry(){
+    const canSync = FIREBASE_CONFIGURED && db && currentUser && currentUser.synced;
+    if(canSync){
+      const docId = dateKey + '__' + currentUser.id;
+      db.collection('entries').doc(docId).get().then((doc) => {
+        if(doc.exists){
+          todaySavedEntry = doc.data();
+          showTodayLocked(todaySavedEntry);
+        } else {
+          todaySavedEntry = null;
+          resetTodayFields();
+          showTodayForm();
+        }
+      }).catch((err) => {
+        console.error('Could not check today\'s entry', err);
+        todaySavedEntry = null;
+        resetTodayFields();
+        showTodayForm();
+      });
+    } else {
+      const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
+      const existing = jar.find(e => e.dateKey === dateKey);
+      if(existing){
+        todaySavedEntry = existing;
+        showTodayLocked(existing);
+      } else {
+        todaySavedEntry = null;
+        resetTodayFields();
+        showTodayForm();
+      }
     }
   }
 
@@ -905,11 +1111,8 @@
   });
 
   // ---------- Save Today / Copy / Clear ----------
-  $('#saveBtn').addEventListener('click', () => {
-    saveDraft();
-    const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
-    const entryIndex = jar.findIndex(e => e.dateKey === dateKey);
-    const entry = {
+  function buildTodayEntry(){
+    return {
       dateKey,
       dateLabel: today.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }),
       year: today.getFullYear(),
@@ -919,14 +1122,56 @@
       songArtist: songArtist.value,
       songLink: songLink.value,
       photoWhy: photoWhy.value,
-      photoData: currentPhotoData
+      photoData: currentPhotoData,
+      authorUid: currentUser ? currentUser.id : 'guest',
+      authorName: currentUser ? currentUser.name : 'you',
+      authorPicture: currentUser && currentUser.picture ? currentUser.picture : ''
     };
-    if(entryIndex >= 0){ jar[entryIndex] = entry; } else { jar.unshift(entry); }
-    const ok = safeSetItem(userKey('betweenus_jar'), JSON.stringify(jar));
-    if(ok){
-      showToast('Saved today to the Memory Jar');
-      renderJar();
+  }
+
+  function saveLocalFallback(entry){
+    const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
+    const idx = jar.findIndex(e => e.dateKey === entry.dateKey);
+    if(idx >= 0){ jar[idx] = entry; } else { jar.unshift(entry); }
+    return safeSetItem(userKey('betweenus_jar'), JSON.stringify(jar));
+  }
+
+  $('#saveBtn').addEventListener('click', () => {
+    saveDraft();
+    const entry = buildTodayEntry();
+    const canSync = FIREBASE_CONFIGURED && db && currentUser && currentUser.synced;
+
+    if(canSync){
+      const docId = dateKey + '__' + currentUser.id;
+      db.collection('entries').doc(docId).set({
+        ...entry,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        showToast('Saved today — synced with your partner');
+        todaySavedEntry = entry;
+        showTodayLocked(entry);
+      }).catch((err) => {
+        console.error('Firestore save failed', err);
+        showToast('Could not sync — check your Firestore rules. Saved locally instead.');
+        saveLocalFallback(entry);
+        todaySavedEntry = entry;
+        showTodayLocked(entry);
+      });
+    } else {
+      const ok = saveLocalFallback(entry);
+      if(ok){
+        showToast(FIREBASE_CONFIGURED ? 'Saved today to your local Memory Jar' : 'Saved today to the Memory Jar');
+        todaySavedEntry = entry;
+        showTodayLocked(entry);
+      }
     }
+  });
+
+  $('#editTodayBtn').addEventListener('click', () => {
+    if(todaySavedEntry){
+      fillTodayFields(todaySavedEntry);
+    }
+    showTodayForm();
   });
 
   $('#copyBtn').addEventListener('click', () => {
@@ -964,36 +1209,78 @@
   });
 
   // ---------- Memory Jar ----------
-  function renderJar(){
-    const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
+  // Shows a live, shared jar via Firestore when the signed-in user is synced;
+  // otherwise falls back to this device's local jar only.
+  function subscribeJar(){
+    if(jarUnsubscribe){ jarUnsubscribe(); jarUnsubscribe = null; }
+    const canSync = FIREBASE_CONFIGURED && db && currentUser && currentUser.synced;
+
+    if(canSync){
+      jarEyebrow.textContent = 'SHARED · SAVED DAYS';
+      jarUnsubscribe = db.collection('entries').orderBy('dateKey', 'desc').onSnapshot(
+        (snapshot) => {
+          const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          latestJarEntries = entries;
+          paintJar(entries, true);
+        },
+        (err) => {
+          console.error('Jar sync error', err);
+          showToast('Could not load the shared Memory Jar — check your Firestore rules');
+          paintJar([], true);
+        }
+      );
+    } else {
+      jarEyebrow.textContent = FIREBASE_CONFIGURED ? 'SAVED DAYS · this device only' : 'SAVED DAYS';
+      const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
+      latestJarEntries = jar;
+      paintJar(jar, false);
+    }
+  }
+
+  function paintJar(entries, isShared){
     const jarEmpty = $('#jarEmpty');
     const jarList = $('#jarList');
-    if(jar.length === 0){
+    if(!entries || entries.length === 0){
       jarEmpty.style.display = 'block';
       jarList.innerHTML = '';
       return;
     }
     jarEmpty.style.display = 'none';
-    jarList.innerHTML = jar.map((e, i) => {
+    jarList.innerHTML = entries.map((e, i) => {
       const parts = [];
-      parts.push('<p><strong>Q:</strong> ' + escapeHtml(e.question) + '</p>');
+      if(isShared && e.authorName){
+        parts.push('<p><strong>' + escapeHtml(e.authorName) + '</strong></p>');
+      }
+      parts.push('<p><strong>Q:</strong> ' + escapeHtml(e.question || '') + '</p>');
       if(e.response) parts.push('<p>' + escapeHtml(e.response) + '</p>');
       if(e.songTitle || e.songArtist){
         parts.push('<p><strong>Song:</strong> ' + escapeHtml([e.songTitle, e.songArtist].filter(Boolean).join(' — ')) + '</p>');
       }
       if(e.photoWhy) parts.push('<p><strong>Photo:</strong> ' + escapeHtml(e.photoWhy) + '</p>');
       if(e.photoData) parts.push('<img class="photo-thumb" src="' + e.photoData + '" alt="saved photo">');
-      parts.push('<div class="row-actions"><button data-i="'+i+'" class="deleteEntry">Remove</button></div>');
-      return '<div class="jar-entry"><div class="when">' + e.dateLabel + '<span class="yr">' + e.year + '</span></div><div class="body">' + parts.join('') + '</div></div>';
+      const delKey = isShared ? (e.id || '') : String(i);
+      parts.push('<div class="row-actions"><button data-key="' + delKey + '" data-shared="' + isShared + '" class="deleteEntry">Remove</button></div>');
+      return '<div class="jar-entry"><div class="when">' + (e.dateLabel || e.dateKey) + '<span class="yr">' + (e.year || '') + '</span></div><div class="body">' + parts.join('') + '</div></div>';
     }).join('');
 
     document.querySelectorAll('.deleteEntry').forEach(btn => {
       btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.i, 10);
-        const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
-        jar.splice(idx, 1);
-        localStorage.setItem(userKey('betweenus_jar'), JSON.stringify(jar));
-        renderJar();
+        const shared = btn.dataset.shared === 'true';
+        if(shared){
+          const docId = btn.dataset.key;
+          if(!docId || !db) return;
+          db.collection('entries').doc(docId).delete().catch((err) => {
+            console.error('Delete failed', err);
+            showToast('Could not remove that entry — try again');
+          });
+          // no manual re-render needed — the onSnapshot listener updates automatically
+        } else {
+          const idx = parseInt(btn.dataset.key, 10);
+          const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
+          jar.splice(idx, 1);
+          safeSetItem(userKey('betweenus_jar'), JSON.stringify(jar));
+          subscribeJar();
+        }
       });
     });
   }
@@ -1005,9 +1292,8 @@
   }
 
   $('#exportBtn').addEventListener('click', () => {
-    const jar = JSON.parse(localStorage.getItem(userKey('betweenus_jar')) || '[]');
-    if(jar.length === 0){ showToast('Nothing to export yet'); return; }
-    const blob = new Blob([JSON.stringify(jar, null, 2)], { type: 'application/json' });
+    if(!latestJarEntries || latestJarEntries.length === 0){ showToast('Nothing to export yet'); return; }
+    const blob = new Blob([JSON.stringify(latestJarEntries, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1018,6 +1304,15 @@
     URL.revokeObjectURL(url);
     showToast('Exported Memory Jar');
   });
+
+  // ---------- Auto-resume if already signed in ----------
+  // Placed at the end of the script (not the top) so every field/function
+  // it touches via enterApp() -> checkTodayEntry()/subscribeJar() already exists.
+  const savedUser = JSON.parse(localStorage.getItem('betweenus_current_user') || 'null');
+  if(savedUser){
+    currentUser = savedUser;
+    enterApp();
+  }
 
 })();
 </script>
